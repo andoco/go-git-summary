@@ -8,7 +8,9 @@ import (
 	"path"
 
 	"github.com/pkg/errors"
+	"gopkg.in/src-d/go-billy.v4/osfs"
 	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing/format/gitignore"
 )
 
 func main() {
@@ -63,10 +65,17 @@ func checkRepoPath(path string) error {
 		return errors.Wrapf(err, "opening repo at path %s", path)
 	}
 
+	fs := osfs.New("/")
+	patterns, err := gitignore.LoadGlobalPatterns(fs)
+	if err != nil {
+		return errors.Wrap(err, "loading global patterns")
+	}
+
 	w, err := r.Worktree()
 	if err != nil {
 		return errors.Wrap(err, "getting worktree")
 	}
+	w.Excludes = patterns
 
 	status, err := w.Status()
 	if err != nil {
