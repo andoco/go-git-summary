@@ -22,9 +22,12 @@ func main() {
 	}
 
 	for _, p := range repos {
-		fmt.Printf("Checking repo %s\n", p)
 		if err := checkRepoPath(p); err != nil {
-			log.Fatal(errors.Wrapf(err, "checking repo at path %s", p))
+			if err == dirtyError {
+				fmt.Printf("%s [DIRTY]\n", p)
+			} else {
+				log.Fatal(errors.Wrapf(err, "checking repo at path %s", p))
+			}
 		}
 	}
 
@@ -59,6 +62,8 @@ func isGitRepo(p string) bool {
 	return false
 }
 
+var dirtyError = errors.New("dirty repo")
+
 func checkRepoPath(path string) error {
 	r, err := git.PlainOpen(path)
 	if err != nil {
@@ -83,8 +88,7 @@ func checkRepoPath(path string) error {
 	}
 
 	if !status.IsClean() {
-		fmt.Printf("DIRTY WORKTREE!\n")
-		fmt.Printf("%v", status)
+		return dirtyError
 	}
 
 	return nil
